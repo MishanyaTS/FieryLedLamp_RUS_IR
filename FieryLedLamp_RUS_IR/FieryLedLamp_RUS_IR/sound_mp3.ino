@@ -1,20 +1,23 @@
 #ifdef MP3_TX_PIN
 
 #ifdef DF_PLAYER_IS_ORIGINAL
-  #define ADVERT_TIMER_1 500UL
-  #define ADVERT_TIMER_2 1900UL
-  #define ADVERT_TIMER_3 500UL
-  #define MP3_DELAY 250
-  #define mp3_delay 50                 // Задержка между командами плееру
+  #define ADVERT_TIMER_1 800UL        // Задержка между командой старт и адверт (если озвучка не играет)
+//  #define ADVERT_TIMER_H 2050UL
+//  #define ADVERT_TIMER_M 2000UL
+  #define ADVERT_TIMER_2 700UL        // Задержка между произнесением минут и командой стоп (когда озвучка не играет)
+  #define MP3_DELAY 500               // Задержка при настройке карты или флешки
+//  #define mp3_delay 70                // Задержка между командами плееру
 
 #else
-  #define ADVERT_TIMER_1 700UL
-  #define ADVERT_TIMER_2 2200UL
-  #define ADVERT_TIMER_3 1200UL
-  #define MP3_DELAY 1600
-  #define mp3_delay 100                // Задержка между командами плееру
+  #define ADVERT_TIMER_1 1000UL        // Задержка между командой старт и адверт (если озвучка не играет)
+//  #define ADVERT_TIMER_H 3000UL
+//  #define ADVERT_TIMER_M 3200UL
+  #define ADVERT_TIMER_2 2000UL
+  #define MP3_DELAY 2000              // Задержка при настройке карты или флешки
+//  #define mp3_delay 150               // Задержка между командами плееру
 
 #endif
+
 #define MP3_READ_TIMEOUT  (500UL)
 /*
 // При наступлении ночи NIGHT_HOURS_START MP3 переходит на ночной режим
@@ -32,7 +35,9 @@ void mp3_setup()   {
       first_entry = 0;
       delay(mp3_delay);
       send_command(0x0C,FEEDBACK,0,0);  //Сброс модуля
+      #ifdef GENERAL_DEBUG
       LOG.println(F("\n mp3 Reset "));
+      #endif
       mp3_player_connect = 2;
       return;
   }
@@ -49,7 +54,7 @@ void mp3_setup()   {
       }
       if (tmp == 2) {
           send_command(0x09,FEEDBACK,0,2);          // Устанавливаем источником SDкарту
-          delay(mp3_delay);
+          delay(MP3_DELAY);
       }
       //read_command (MP3_READ_TIMEOUT);
       send_command(0x0E,FEEDBACK,0,0);              //Пауза
@@ -60,11 +65,11 @@ void mp3_setup()   {
         send_command(6,FEEDBACK,0,eff_volume);               // Устанавливаем громкость равной eff_volume (от 0 до 30)
         mp3_player_connect = 4;
       LOG.print (F("\nMP3 плеер подключён. "));
-      if (tmp == 2) LOG.println (F("Установлена ​​SD-карта"));
-      if (tmp == 1 || tmp == 3) LOG.println (F("Установлена флешка"));
-      if (tmp == 0) LOG.println (F("SD-карта или Флешка не установлена"));
+      if (tmp == 2) LOG.println (F("Установлена ​​SD-карта\n"));
+      if (tmp == 1 || tmp == 3) LOG.println (F("Установлена флешка\n"));
+      if (tmp == 0) LOG.println (F("SD-карта или Флешка не установлена\n"));
     }
-    else { LOG.println (F("\nSD-карта (флешка) не установлена ​​или МР3 плеер не подключен")); mp3_player_connect = 0; }
+    else { LOG.println (F("\nSD-карта (флешка) не установлена ​​или МР3 плеер не подключен\n")); mp3_player_connect = 0; }
 }
 
 void play_time_ADVERT()   {
@@ -83,26 +88,26 @@ void play_time_ADVERT()   {
            if (pt_h==0) pt_h=24;
            send_command(0x13,FEEDBACK,0,pt_h);  //Старт Адверт №... Часы
            //Serial.print ("Start ADVERT Hour");
+           mp3_timer = millis();
            delay(mp3_delay);
            if (day_night) send_command(0x06,FEEDBACK,0,day_advert_volume);  //Громкость днём
            else send_command(0x06,FEEDBACK,0,night_advert_volume);  //Громкость ночью
-           mp3_timer = millis();
-        }
-        if (advert_hour && (millis() - mp3_timer > ADVERT_TIMER_2)) {
+           }
+        if (advert_hour && (millis() - mp3_timer > ADVERT_TIMER_H)) {
            advert_hour = false;
            int pt_m=(uint8_t)(thisTime % 60U);
            send_command(0x13,FEEDBACK,0,pt_m+100);  //Старт Адверт №... Минуты
            //Serial.print ("Start ADVERT Minute");
            mp3_timer = millis();
         }
-        if (!advert_hour && millis() - mp3_timer > ADVERT_TIMER_2) {
+        if (!advert_hour && millis() - mp3_timer > ADVERT_TIMER_M) {
            send_command(0x06,FEEDBACK,0,0);  //Громкость
            mp3_timer = millis();
            first_entry =2;
         }
     }
     else {
-        if (millis() - mp3_timer > ADVERT_TIMER_3) {
+        if (millis() - mp3_timer > ADVERT_TIMER_2) {
            advert_flag = false;
            first_entry =0;
            delay(mp3_delay);    
