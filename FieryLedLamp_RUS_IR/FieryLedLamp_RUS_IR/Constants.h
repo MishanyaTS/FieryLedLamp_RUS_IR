@@ -500,7 +500,7 @@ static const uint8_t Default_Settings[] PROGMEM = { //Дополнительны
 };
 
 String configSetup = "{}";
-
+/*
 // Раскоментируйте эти четыре функции и закоментируйте следующие четыре функции если используете библиотеку ArduinoJSON Version 5 (по умолчанию используется Version5)
 
 // ------------- Чтение значения json String
@@ -536,8 +536,8 @@ String jsonWrite(String &json, String name, int volume) {
   root.printTo(json);
   return json;
 }
+*/
 
-/*
 // Раскоментируйте эти четыре функции и закоментируйте предыдущие четыре функции если используете библиотеку ArduinoJSON Version 6
 // StaticJsonDocument<2048> doc;  // DynamicJsonDocument doc(2048);
 // ------------- Чтение значения json String
@@ -602,7 +602,7 @@ String jsonWrite(String &json, String name, int volume) {
   serializeJson(doc, json);
   return json;
 }
-*/
+
 
 // ------------- Запись строки в файл
 String writeFile(const String& fileName, String& strings ) {
