@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 Текущая версия: FieryLedLamp v3.3_IR 109 эффектов 
-=======
-Текущая версия: FieryLedLamp v3.2_IR 107 эффектов 
->>>>>>> parent of b845003 (Update)
 
 ИСТОРИЯ ВЕРСИЙ:
 Версия FieryLedLamp_v3.3_IR 109 эффектов
