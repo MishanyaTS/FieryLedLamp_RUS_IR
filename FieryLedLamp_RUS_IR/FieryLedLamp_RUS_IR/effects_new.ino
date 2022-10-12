@@ -2448,3 +2448,169 @@ void Contacts() {
     }
   }
 }
+
+// ============ Magic Lantern ===========
+//             © SlingMaster
+//            Волшебный Фонарик
+// --------------------------------------
+void MagicLantern() {
+  static uint8_t saturation;
+  static uint8_t brightness;
+  static uint8_t low_br;
+  uint8_t delta;
+  const uint8_t PADDING = HEIGHT * 0.25;
+  const uint8_t WARM_LIGHT = 55U;
+  const uint8_t STEP = 4U;
+  if (loadingFlag) {
+#if defined(USE_RANDOM_SETS_IN_APP) || defined(RANDOM_SETTINGS_IN_CYCLE_MODE)
+    if (selectedSettings) {
+      //                     scale | speed 210
+      setModeSettings(random8(100U), random8(40, 200U));
+    }
+#endif
+    loadingFlag = false;
+    deltaValue = 0;
+    step = deltaValue;
+    if (modes[currentMode].Speed > 52) {
+      // brightness = 50 + modes[currentMode].Speed;
+      brightness = map(modes[currentMode].Speed, 1, 255, 50U, 250U);
+      low_br = 50U;
+    } else {
+      brightness = 0U;
+      low_br = 0U;
+    }
+    saturation = (modes[currentMode].Scale > 50U) ? 64U : 0U;
+    if (abs (70 - modes[currentMode].Scale) <= 5) saturation = 170U;
+    FastLED.clear();
+
+  }
+  dimAll(170);
+  hue = (modes[currentMode].Scale > 95) ? floor(step / 32) * 32U : modes[currentMode].Scale * 2.55;
+
+  // ------
+  for (uint8_t x = 0U; x < WIDTH + 1 ; x++) {
+
+    // light ---
+    if (low_br > 0) {
+      gradientVertical( x - deltaValue, CENTER_Y_MAJOR, x + 1U - deltaValue, HEIGHT - PADDING - 1,  WARM_LIGHT, WARM_LIGHT, brightness, low_br, saturation);
+      gradientVertical( WIDTH - x + deltaValue, CENTER_Y_MAJOR, WIDTH - x + 1U + deltaValue, HEIGHT - PADDING - 1,  WARM_LIGHT, WARM_LIGHT, brightness, low_br, saturation);
+      gradientVertical( x - deltaValue, PADDING + 1, x + 1U - deltaValue, CENTER_Y_MAJOR, WARM_LIGHT, WARM_LIGHT, low_br + 10, brightness, saturation);
+      gradientVertical( WIDTH - x + deltaValue, PADDING + 1, WIDTH - x + 1U + deltaValue, CENTER_Y_MAJOR, WARM_LIGHT, WARM_LIGHT, low_br + 10, brightness, saturation);
+    } else {
+      if (x % (STEP + 1) == 0) {
+        leds[XY(random8(WIDTH), random8(PADDING + 2, HEIGHT - PADDING - 2))] = CHSV(step - 32U, random8(128U, 255U), 255U);
+      }
+      if ((modes[currentMode].Speed < 25) & (low_br == 0)) {
+        deltaValue = 0;
+        if (x % 2 != 0) {
+          gradientVertical( x - deltaValue, HEIGHT - PADDING, x + 1U - deltaValue, HEIGHT,  hue, hue + 2, 64U, 20U, 255U);
+          gradientVertical( (WIDTH - x + deltaValue), 0U,  (WIDTH - x + 1U + deltaValue), PADDING,  hue, hue, 42U, 64U, 255U);
+        }
+        //        deltaValue = 0;
+      }
+    }
+    if (x % STEP == 0) {
+      // body --
+      gradientVertical( x - deltaValue, HEIGHT - PADDING, x + 1U - deltaValue, HEIGHT,  hue, hue + 2, 255U, 20U, 255U);
+      gradientVertical( (WIDTH - x + deltaValue), 0U,  (WIDTH - x + 1U + deltaValue), PADDING,  hue, hue, 42U, 255U, 255U);
+    }
+  }
+  // ------
+
+  deltaValue++;
+  if (deltaValue >= STEP) {
+    deltaValue = 0;
+  }
+
+  step++;
+}
+
+// ============  Огонь с искрами =============
+//               © Stepko
+//    updated with Sparks © kostyamat
+//             EFF_FIRE_SPARK
+//            Fire with Sparks
+//---------------------------------------
+uint16_t RGBweight(uint16_t idx) {
+  return (leds[idx].r + leds[idx].g + leds[idx].b);
+}
+class Spark {
+  private:
+    CRGB color;
+    uint8_t Bri;
+    uint8_t Hue;
+    float x, y, speedy = (float)random(5, 30) / 10;
+
+  public:
+    void addXY(float nx, float ny) {
+      //drawPixelXYF(x, y, 0);
+      x += nx;
+      y += ny * speedy;
+    }
+
+    float getY() {
+      return y;
+    }
+
+    void reset() {
+      uint32_t peak = 0;
+      speedy = (float)random(5, 30) / 10;
+      y = random(HEIGHT / 4, HEIGHT / 2);
+      for (uint8_t i = 0; i < WIDTH; i++) {
+        uint32_t temp = RGBweight(XY(i, y));
+        if (temp > peak) {
+          x = i;
+          peak = temp;
+        }
+      }
+
+      color = leds[XY(x, y)];
+    }
+
+    void draw() {
+      color.fadeLightBy(256 / (HEIGHT * 0.75));
+      drawPixelXYF(x, y, color);
+    }
+};
+
+const byte sparksCount = WIDTH / 4;
+Spark sparks[sparksCount];
+
+//---------------------------------------
+void  FireSparks() {
+  bool withSparks = false; // true/false
+  static uint32_t t;
+  const uint8_t spacer = HEIGHT / 4;
+  byte scale = 50;
+
+  if (loadingFlag) {
+
+#if defined(USE_RANDOM_SETS_IN_APP) || defined(RANDOM_SETTINGS_IN_CYCLE_MODE)
+    if (selectedSettings) {
+      // scale | speed
+      setModeSettings(random(0U, 99U), random(20U, 100U));
+    }
+#endif
+    loadingFlag = false;
+    FPSdelay = DYNAMIC;
+    for (byte i = 0; i < sparksCount; i++) sparks[i].reset();
+  }
+  withSparks = modes[currentMode].Scale >= 50;
+  t += modes[currentMode].Speed;
+
+  if (withSparks)
+    for (byte i = 0; i < sparksCount; i++) {
+      sparks[i].addXY((float)random(-1, 2) / 2, 0.75);
+      if (sparks[i].getY() > HEIGHT and !random(0, 50)) sparks[i].reset();
+      else sparks[i].draw();
+    }
+
+  for (byte x = 0; x < WIDTH; x++) {
+    for (byte y = 0; y < HEIGHT; y++) {
+      int16_t Bri = inoise8(x * scale, (y * scale) - t) - ((withSparks ? y + spacer : y) * (255 / HEIGHT));
+      byte Col = Bri;
+      if (Bri < 0) Bri = 0; if (Bri != 0) Bri = 256 - (Bri * 0.2);
+      nblend(leds[XY(x, y)], ColorFromPalette(HeatColors_p, Col, Bri), modes[currentMode].Speed);
+    }
+  }
+}
